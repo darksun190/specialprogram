@@ -1,10 +1,50 @@
 /*
-  this lib is for Carl Zeiss Calypso special program
-  this lib read all file information in the transfer folder
-  only for curve files
-*/
+ *this lib is for Carl Zeiss Calypso special program
+ *this lib read all file information & values in the transfer folder
+ *Author: Sun Xin
+ *mail: darksun190@gmail.com
+ *You can use it in GPL License
+ */
 #include "sp_xmlread.h"
 
+point::point()
+{
+    //x=y=z=u=v=w=radius=ut=lt=status=0;
+}
+point::point(double ix, double iy, double iz, double iu, double iv, double iw, double iradius, double iut, double ilt, double istatus)
+{
+    x=ix;
+    y=iy;
+    z=iz;
+    u=iu;
+    v=iv;
+    w=iw;
+    radius=iradius;
+    ut=iut;
+    lt=ilt;
+    status = istatus;
+}
+
+element::element()
+{
+    Identifier = QString("NotDefine");
+    v.u = 9999;
+    v.v = 9999;
+    v.w = 9999;
+    p.x = 9999;
+    p.y = 9999;
+    p.z = 9999;
+    type = QString("NotDefine");
+    radius = 9999;
+    direction = 9999;
+    width = 9999;
+    length = 9999;
+    points.resize(0);
+    nom_points.resize(0);
+    act_points.resize(0);
+    mea_points.resize(0);
+    height = 9999;
+}
 
 Sp_xmlread::Sp_xmlread()
 {
@@ -14,11 +54,13 @@ Sp_xmlread::Sp_xmlread(const QString &foldername)
 {
     {
         //list names
+        qDebug()<<"This is the sp_xmlread part";
         QString fileName(QString("%1/ElementsToSpecialProgram.xml").arg(foldername));
         QFile file(fileName);
         if (!file.open(QFile::ReadOnly | QFile::Text))
         {
-            //return false;
+            ;
+            return ;
         }
         QXmlStreamReader reader;
 
@@ -35,20 +77,268 @@ Sp_xmlread::Sp_xmlread(const QString &foldername)
                 }
                 if(reader.name()== "Element")
                 {
-                    //insert a name;
-                    QString buf;
-                    buf = reader.attributes().value("Identifier").toString();
+                    //insert a element;
+                    element temp;
 
-                    /*buf = reader.attributes().value("ActPoints").toString();
-                    QStringList listbuf;
-                    listbuf = buf.split("\\");
-                    QString tmp;
-                    tmp = listbuf.at(listbuf.size()-1);
-                    int pos;
-                    pos = tmp.lastIndexOf("_");
-                    names.push_back(tmp.left(pos));*/
-                    names.push_back(buf);
-                    qDebug()<<names.last();
+                    QString type;
+
+                    type = reader.attributes().value("GeoType").toString();
+                    qDebug()<<type;
+                    temp.Identifier = reader.attributes().value("Identifier").toString();
+                    temp.type = type;
+
+                    if (type == QString("SpacePoint"))
+                    {
+                        QString buf;
+                        buf = reader.attributes().value("Vector").toString();
+                        QStringList vec_buf = buf.split(" ");
+                        temp.v.u= vec_buf[0].toDouble();
+                        temp.v.v= vec_buf[1].toDouble();
+                        temp.v.w= vec_buf[2].toDouble();
+                        buf = reader.attributes().value("Position").toString();
+                        QStringList pos_buf = buf.split(" ");
+                        temp.p.x= pos_buf[0].toDouble();
+                        temp.p.y= pos_buf[1].toDouble();
+                        temp.p.z= pos_buf[2].toDouble();
+
+                        QFile file(reader.attributes().value("Points").toString());
+
+                        qDebug()<<file.fileName();
+                        qDebug()<<file.exists();
+                        if (!file.open(QFile::ReadOnly | QFile::Text))
+                        {
+                            qDebug()<<"open Error";
+                        }
+                        QTextStream point_in(&file);
+                        QString bufLine;
+                        while(1)
+                        {
+                            bufLine = point_in.readLine();
+                            if(bufLine.isNull())
+                                break;
+                            QStringList temp_list = bufLine.split(" ");
+                            point temp_p;
+                            temp_p.x = temp_list.at(0).toDouble();
+                            temp_p.y = temp_list.at(1).toDouble();
+                            temp_p.z = temp_list.at(2).toDouble();
+                            temp_p.u = temp_list.at(3).toDouble();
+                            temp_p.v = temp_list.at(4).toDouble();
+                            temp_p.w = temp_list.at(5).toDouble();
+                            temp.points.push_back(temp_p);
+                        }
+                        qDebug()<<temp.points.size();
+                    }
+
+                    if (type == QString("Circle"))
+                    {
+                        QString buf;
+                        buf = reader.attributes().value("Vector").toString();
+                        QStringList vec_buf = buf.split(" ");
+                        temp.v.u= vec_buf[0].toDouble();
+                        temp.v.v= vec_buf[1].toDouble();
+                        temp.v.w= vec_buf[2].toDouble();
+                        buf = reader.attributes().value("Position").toString();
+                        QStringList pos_buf = buf.split(" ");
+                        temp.p.x= pos_buf[0].toDouble();
+                        temp.p.y= pos_buf[1].toDouble();
+                        temp.p.z= pos_buf[2].toDouble();
+
+                        temp.length = reader.attributes().value("Length").toString().toDouble();
+                        if (reader.attributes().value("InverseOrientation").toString() == QString("true"))
+                        {
+                            temp.direction = 1; //mean outside circle
+                        }
+                        else
+                        {
+                            temp.direction = -1;  //mean inside circle
+                        }
+                        temp.radius = reader.attributes().value("Radius").toString().toDouble();
+                        QFile file(reader.attributes().value("Points").toString());
+
+                        qDebug()<<file.fileName();
+                        qDebug()<<file.exists();
+                        if (!file.open(QFile::ReadOnly | QFile::Text))
+                        {
+                            qDebug()<<"open Error";
+                        }
+                        QTextStream point_in(&file);
+                        QString bufLine;
+                        while(1)
+                        {
+                            bufLine = point_in.readLine();
+                            if(bufLine.isNull())
+                                break;
+                            QStringList temp_list = bufLine.split(" ");
+                            point temp_p;
+                            temp_p.x = temp_list.at(0).toDouble();
+                            temp_p.y = temp_list.at(1).toDouble();
+                            temp_p.z = temp_list.at(2).toDouble();
+                            temp_p.u = temp_list.at(3).toDouble();
+                            temp_p.v = temp_list.at(4).toDouble();
+                            temp_p.w = temp_list.at(5).toDouble();
+                            temp.points.push_back(temp_p);
+                        }
+                        qDebug()<<temp.points.size();
+                    }
+
+                    if (type == QString("Cylinder"))
+                    {
+                        QString buf;
+                        buf = reader.attributes().value("Vector").toString();
+                        QStringList vec_buf = buf.split(" ");
+                        temp.v.u= vec_buf[0].toDouble();
+                        temp.v.v= vec_buf[1].toDouble();
+                        temp.v.w= vec_buf[2].toDouble();
+                        buf = reader.attributes().value("Position").toString();
+                        QStringList pos_buf = buf.split(" ");
+                        temp.p.x= pos_buf[0].toDouble();
+                        temp.p.y= pos_buf[1].toDouble();
+                        temp.p.z= pos_buf[2].toDouble();
+
+                        temp.height = reader.attributes().value("Height").toString().toDouble();
+                        if (reader.attributes().value("InverseOrientation").toString() == QString("true"))
+                        {
+                            temp.direction = 1; //mean outside circle
+                        }
+                        else
+                        {
+                            temp.direction = -1;  //mean inside circle
+                        }
+                        temp.radius = reader.attributes().value("Radius").toString().toDouble();
+                        QFile file(reader.attributes().value("Points").toString());
+
+                        qDebug()<<file.fileName();
+                        qDebug()<<file.exists();
+                        if (!file.open(QFile::ReadOnly | QFile::Text))
+                        {
+                            qDebug()<<"open Error";
+                        }
+                        QTextStream point_in(&file);
+                        QString bufLine;
+                        while(1)
+                        {
+                            bufLine = point_in.readLine();
+                            if(bufLine.isNull())
+                                break;
+                            QStringList temp_list = bufLine.split(" ");
+                            point temp_p;
+                            temp_p.x = temp_list.at(0).toDouble();
+                            temp_p.y = temp_list.at(1).toDouble();
+                            temp_p.z = temp_list.at(2).toDouble();
+                            temp_p.u = temp_list.at(3).toDouble();
+                            temp_p.v = temp_list.at(4).toDouble();
+                            temp_p.w = temp_list.at(5).toDouble();
+                            temp.points.push_back(temp_p);
+                        }
+                        qDebug()<<temp.points.size();
+                    }
+
+                    if (type == QString("Cone"))
+                    {
+                        QString buf;
+                        buf = reader.attributes().value("Vector").toString();
+                        QStringList vec_buf = buf.split(" ");
+                        temp.v.u= vec_buf[0].toDouble();
+                        temp.v.v= vec_buf[1].toDouble();
+                        temp.v.w= vec_buf[2].toDouble();
+                        buf = reader.attributes().value("Position").toString();
+                        QStringList pos_buf = buf.split(" ");
+                        temp.p.x= pos_buf[0].toDouble();
+                        temp.p.y= pos_buf[1].toDouble();
+                        temp.p.z= pos_buf[2].toDouble();
+
+                        temp.height = reader.attributes().value("Height").toString().toDouble();
+                        if (reader.attributes().value("InverseOrientation").toString() == QString("true"))
+                        {
+                            temp.direction = 1; //mean outside circle
+                        }
+                        else
+                        {
+                            temp.direction = -1;  //mean inside circle
+                        }
+                        temp.radius = reader.attributes().value("Radius").toString().toDouble();
+                        QFile file(reader.attributes().value("Points").toString());
+
+                        qDebug()<<file.fileName();
+                        qDebug()<<file.exists();
+                        if (!file.open(QFile::ReadOnly | QFile::Text))
+                        {
+                            qDebug()<<"open Error";
+                        }
+                        QTextStream point_in(&file);
+                        QString bufLine;
+                        while(1)
+                        {
+                            bufLine = point_in.readLine();
+                            if(bufLine.isNull())
+                                break;
+                            QStringList temp_list = bufLine.split(" ");
+                            point temp_p;
+                            temp_p.x = temp_list.at(0).toDouble();
+                            temp_p.y = temp_list.at(1).toDouble();
+                            temp_p.z = temp_list.at(2).toDouble();
+                            temp_p.u = temp_list.at(3).toDouble();
+                            temp_p.v = temp_list.at(4).toDouble();
+                            temp_p.w = temp_list.at(5).toDouble();
+                            temp.points.push_back(temp_p);
+                        }
+                        qDebug()<<temp.points.size();
+                    }
+
+                    if (type == QString("Plane"))
+                    {
+                        QString buf;
+                        buf = reader.attributes().value("Vector").toString();
+                        QStringList vec_buf = buf.split(" ");
+                        temp.v.u= vec_buf[0].toDouble();
+                        temp.v.v= vec_buf[1].toDouble();
+                        temp.v.w= vec_buf[2].toDouble();
+                        buf = reader.attributes().value("Position").toString();
+                        QStringList pos_buf = buf.split(" ");
+                        temp.p.x= pos_buf[0].toDouble();
+                        temp.p.y= pos_buf[1].toDouble();
+                        temp.p.z= pos_buf[2].toDouble();
+
+                        temp.length = reader.attributes().value("Length").toString().toDouble();
+                        temp.width =  reader.attributes().value("Width").toString().toDouble();
+                        QFile file(reader.attributes().value("Points").toString());
+
+                        qDebug()<<file.fileName();
+                        qDebug()<<file.exists();
+                        if (!file.open(QFile::ReadOnly | QFile::Text))
+                        {
+                            qDebug()<<"open Error";
+                        }
+                        QTextStream point_in(&file);
+                        QString bufLine;
+                        while(1)
+                        {
+                            bufLine = point_in.readLine();
+                            if(bufLine.isNull())
+                                break;
+                            QStringList temp_list = bufLine.split(" ");
+                            point temp_p;
+                            temp_p.x = temp_list.at(0).toDouble();
+                            temp_p.y = temp_list.at(1).toDouble();
+                            temp_p.z = temp_list.at(2).toDouble();
+                            temp_p.u = temp_list.at(3).toDouble();
+                            temp_p.v = temp_list.at(4).toDouble();
+                            temp_p.w = temp_list.at(5).toDouble();
+                            temp.points.push_back(temp_p);
+                        }
+                        qDebug()<<temp.points.size();
+                    }
+
+
+                    if (type == QString("Curve"))
+                    {
+                        //temp.act_file = reader.attributes().value("ActPoints").toString();
+                        //temp.nom_file = reader.attributes().value("NomPoints").toString();
+                        //temp.mea_file = reader.attributes().value("MeaPoints").toString();
+                    }
+
+                    names.push_back(temp);
+                    qDebug()<<names.last().Identifier;
                 }
             }
             reader.readNext();
