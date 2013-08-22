@@ -27,6 +27,7 @@ point::point(double ix, double iy, double iz, double iu, double iv, double iw, d
 
 element::element()
 {
+    //9999 means not define, as same as Calypso use
     Identifier = QString("NotDefine");
     v.u = 9999;
     v.v = 9999;
@@ -330,8 +331,93 @@ Sp_xmlread::Sp_xmlread(const QString &foldername)
                     }
 
 
-                    if (type == QString("Curve"))
+                    if (type == QString("curve"))
                     {
+                        {
+                            QFile actfile(reader.attributes().value("ActPoints").toString());
+
+                            qDebug()<<actfile.fileName();
+                            qDebug()<<actfile.exists();
+                            if (!actfile.open(QFile::ReadOnly | QFile::Text))
+                            {
+                                qDebug()<<"open act file Error";
+                            }
+                            QTextStream actpoint_in(&actfile);
+                            QString bufLine;
+                            while(1)
+                            {
+                                bufLine = actpoint_in.readLine();
+                                if(bufLine.isNull())
+                                    break;
+                                QStringList temp_list = bufLine.split(" ");
+                                point temp_p;
+                                temp_p.x = temp_list.at(1).toDouble();
+                                temp_p.y = temp_list.at(2).toDouble();
+                                temp_p.z = temp_list.at(3).toDouble();
+                                temp_p.u = temp_list.at(4).toDouble();
+                                temp_p.v = temp_list.at(5).toDouble();
+                                temp_p.w = temp_list.at(6).toDouble();
+                                temp_p.radius = temp_list.at(8).toDouble();
+                                temp.act_points.push_back(temp_p);
+                            }
+                        }
+                        {
+                            QFile nomfile(reader.attributes().value("NomPoints").toString());
+
+                            qDebug()<<nomfile.fileName();
+                            qDebug()<<nomfile.exists();
+                            if (!nomfile.open(QFile::ReadOnly | QFile::Text))
+                            {
+                                qDebug()<<"open nom file Error";
+                            }
+                            QTextStream nompoint_in(&nomfile);
+                            QString bufLine;
+                            while(1)
+                            {
+                                bufLine = nompoint_in.readLine();
+                                if(bufLine.isNull())
+                                    break;
+                                QStringList temp_list = bufLine.split(" ");
+                                point temp_p;
+                                temp_p.x = temp_list.at(1).toDouble();
+                                temp_p.y = temp_list.at(2).toDouble();
+                                temp_p.z = temp_list.at(3).toDouble();
+                                temp_p.u = temp_list.at(4).toDouble();
+                                temp_p.v = temp_list.at(5).toDouble();
+                                temp_p.w = temp_list.at(6).toDouble();
+                                temp_p.ut = temp_list.at(8).toDouble();
+                                temp_p.lt = temp_list.at(9).toDouble();
+                                temp.nom_points.push_back(temp_p);
+                            }
+                        }
+                        {
+                            QFile measfile(reader.attributes().value("MeasPoints").toString());
+
+                            qDebug()<<measfile.fileName();
+                            qDebug()<<measfile.exists();
+                            if (!measfile.open(QFile::ReadOnly | QFile::Text))
+                            {
+                                qDebug()<<"open meas file Error";
+                            }
+                            QTextStream measpoint_in(&measfile);
+                            QString bufLine;
+                            while(1)
+                            {
+                                bufLine = measpoint_in.readLine();
+                                if(bufLine.isNull())
+                                    break;
+                                QStringList temp_list = bufLine.split(" ");
+                                point temp_p;
+                                temp_p.x = temp_list.at(1).toDouble();
+                                temp_p.y = temp_list.at(2).toDouble();
+                                temp_p.z = temp_list.at(3).toDouble();
+                                temp_p.u = temp_list.at(4).toDouble();
+                                temp_p.v = temp_list.at(5).toDouble();
+                                temp_p.w = temp_list.at(6).toDouble();
+                                temp_p.radius = temp_list.at(8).toDouble();
+                                temp.mea_points.push_back(temp_p);
+                            }
+                        }
                         //temp.act_file = reader.attributes().value("ActPoints").toString();
                         //temp.nom_file = reader.attributes().value("NomPoints").toString();
                         //temp.mea_file = reader.attributes().value("MeaPoints").toString();
