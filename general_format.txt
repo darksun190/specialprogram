@@ -87,3 +87,14 @@ Curve
     MeasPoints="..\..\home\om\testPrg\fromCalypso\MV_ELift_MeasPoints.txt"
     NomPoints="..\..\home\om\testPrg\fromCalypso\MV_ELift_NomPoints.txt"/>
 </GeometryData>
+
+curve_para.xml
+<?xml version="1.0" encoding="utf-8"?>
+<CurveParameters>
+<maxDev>6.3239451435063d-4</maxDev>
+<indexOfMaxDev>22</indexOfMaxDev>
+<minDev>-0.0018600765726807d</minDev>
+<indexOfMinDev>25</indexOfMinDev>
+<isProjected>false</isProjected>
+<probeCorrection>true</probeCorrection>
+</CurveParameters>

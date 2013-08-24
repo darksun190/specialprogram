@@ -46,6 +46,7 @@ public:
     QVector <point> nom_points; //these 3 for curve
     QVector <point> act_points;
     QVector <point> mea_points;
+    QMap <QString,QString> curve_paras;
 
     double height;      //for axis length of cylinder cone.
 
